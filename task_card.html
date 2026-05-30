@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карточка задачи</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f0; min-height: 100vh; padding: 40px 24px; }
+  .page { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
+
+  .section-label { font-size: 12px; font-weight: 600; color: #888; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+
+  .card { background: #fff; border: 1px solid #e5e5e0; border-radius: 14px; overflow: hidden; }
+
+  .card-header { padding: 14px 20px; border-bottom: 1px solid #efefea; display: flex; align-items: center; gap: 10px; }
+  .card-header-title { font-size: 15px; font-weight: 500; color: #1a1a1a; flex: 1; }
+  .header-meta { font-size: 12px; color: #aaa; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid #efefea; padding: 0 20px; background: #fafaf8; }
+  .tab { font-size: 13px; font-weight: 500; color: #888; padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; user-select: none; }
+  .tab:hover { color: #333; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+  .tab-content { display: none; padding: 20px; }
+  .tab-content.active { display: block; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 11px; font-weight: 600; color: #aaa; letter-spacing: .05em; text-transform: uppercase; }
+  .field-value { font-size: 14px; color: #1a1a1a; }
+  .field-value.muted { color: #666; }
+
+  .prio-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 20px; }
+  .prio-high   { background: #FAEEDA; color: #633806; }
+  .prio-crit   { background: #FCEBEB; color: #A32D2D; }
+  .prio-med    { background: #f5f5f0; color: #555; }
+  .prio-dot    { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .status-pill { display: inline-block; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 10px; }
+  .s-work { background: #EAF3DE; color: #27500A; }
+  .s-wait { background: #FAEEDA; color: #633806; }
+  .s-new  { background: #E6F1FB; color: #185FA5; }
+
+  .divider { height: 1px; background: #efefea; margin: 16px 0; }
+
+  .desc-block { background: #fafaf8; border-radius: 10px; padding: 14px 16px; font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 14px; }
+
+  .progress-wrap { margin-bottom: 6px; }
+  .progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-label span { font-size: 13px; color: #555; }
+  .progress-label strong { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+  .progress-track { height: 10px; background: #f0f0ea; border-radius: 5px; overflow: visible; position: relative; cursor: pointer; }
+  .progress-fill { height: 100%; border-radius: 5px; background: #639922; transition: width .2s; }
+  .progress-input { width: 100%; margin-top: 10px; }
+
+  .action-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 9px; border: 1px solid #ddd; background: #fff; color: #1a1a1a; cursor: pointer; font-family: inherit; transition: background .12s, border-color .12s; }
+  .btn:hover { background: #f5f5f0; border-color: #bbb; }
+  .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { color: #A32D2D; border-color: #f5c4c4; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-amber { color: #633806; border-color: #f5d9a8; background: #fffbf0; }
+  .btn-amber:hover { background: #FAEEDA; }
+
+  .reminder-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: #E6F1FB; color: #185FA5; padding: 3px 10px; border-radius: 8px; font-weight: 500; }
+  .reminder-tag button { background: none; border: none; cursor: pointer; color: #378ADD; font-size: 14px; line-height: 1; padding: 0 0 0 2px; }
+
+  .history-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f5f0; font-size: 13px; }
+  .history-item:last-child { border-bottom: none; }
+  .hist-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; margin-top: 1px; }
+  .hist-body { flex: 1; }
+  .hist-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+  .comment-input-wrap { display: flex; gap: 10px; margin-top: 14px; }
+  .comment-input-wrap textarea { flex: 1; font-family: inherit; font-size: 13px; padding: 9px 12px; border: 1px solid #e5e5e0; border-radius: 9px; resize: none; outline: none; color: #1a1a1a; background: #fff; }
+  .comment-input-wrap textarea:focus { border-color: #bbb; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; border: 1px solid #e5e5e0; }
+  .modal-title { font-size: 16px; font-weight: 500; color: #1a1a1a; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .modal-sub { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label { font-size: 12px; font-weight: 600; color: #aaa; letter-spacing: .05em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .days-row { display: flex; align-items: center; gap: 10px; }
+  .days-row input[type=number] { width: 80px; padding: 8px 12px; font-size: 15px; font-weight: 500; text-align: center; border: 1px solid #e5e5e0; border-radius: 9px; outline: none; font-family: inherit; color: #1a1a1a; }
+  .days-row input[type=number]:focus { border-color: #bbb; }
+  .days-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .days-preset { font-size: 12px; padding: 4px 10px; border-radius: 8px; border: 1px solid #e5e5e0; background: #fff; cursor: pointer; color: #555; font-family: inherit; transition: all .12s; }
+  .days-preset:hover, .days-preset.sel { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .modal-note { background: #fafaf8; border-radius: 9px; width: 100%; padding: 9px 12px; font-family: inherit; font-size: 13px; border: 1px solid #e5e5e0; resize: none; outline: none; color: #1a1a1a; }
+  .modal-note:focus { border-color: #bbb; }
+  .modal-footer { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-footer .btn { flex: 1; justify-content: center; }
+
+  .success-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 10px; display: none; z-index: 200; white-space: nowrap; }
+  .success-toast.show { display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- КАРТОЧКА ЗАДАЧИ -->
+  <div>
+    <div class="section-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Карточка задачи
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div style="flex:1">
+          <div class="card-header-title">Обновить конфигурацию модуля отчётности</div>
+          <div style="margin-top:4px;display:flex;align-items:center;gap:8px">
+            <span class="status-pill s-work">В работе</span>
+            <span class="header-meta">#1042 · создана 24.05.2026</span>
+          </div>
+        </div>
+        <button class="btn" onclick="openWaitDialog()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Ожидаю ответа
+        </button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('main',this)">Основное</div>
+        <div class="tab" onclick="switchTab('history',this)">История</div>
+        <div class="tab" onclick="switchTab('comments',this)">Комментарии <span style="font-size:11px;background:#f1f1ec;color:#666;padding:1px 6px;border-radius:8px;margin-left:4px">2</span></div>
+      </div>
+
+      <div class="tab-content active" id="tab-main">
+
+        <div class="field-row">
+          <div class="field">
+            <span class="field-label">Приоритет</span>
+            <span class="prio-badge prio-high">
+              <span class="prio-dot" style="background:#EF9F27"></span>
+              Высокий
+            </span>
+          </div>
+          <div class="field">
+            <span class="field-label">Срок исполнения</span>
+            <span class="field-value" style="color:#E24B4A;font-weight:500">30.05.2026 <span style="font-size:12px;font-weight:400;color:#aaa">— просрочена</span></span>
+          </div>
+          <div class="field">
+            <span class="field-label">Инициатор</span>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="width:24px;height:24px;border-radius:50%;background:#FCEBEB;color:#A32D2D;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600">ИА</div>
+              <span class="field-value">Иванов А.С.</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Исполнитель</span>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="width:24px;height:24px;border-radius:50%;background:#E6F1FB;color:#185FA5;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600">УЕ</div>
+              <span class="field-value">Урсова Е.А.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field" style="margin-bottom:14px">
+          <span class="field-label">Описание проблемы</span>
+          <div class="desc-block">Необходимо обновить конфигурацию модуля отчётности после выхода релиза 1.4.9.1. Текущая версия не корректно формирует сводные таблицы при фильтрации по датам.</div>
+        </div>
+
+        <div class="field" style="margin-bottom:14px">
+          <span class="field-label">Ожидаемый результат</span>
+          <div class="desc-block" style="background:#F3FAE8;color:#27500A">Модуль отчётности формирует сводные таблицы корректно. Фильтрация по датам работает без ошибок.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field" style="margin-bottom:6px">
+          <span class="field-label" style="margin-bottom:8px;display:block">Прогресс выполнения</span>
+          <div class="progress-label">
+            <span>Степень готовности</span>
+            <strong id="progress-val">65%</strong>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width:65%"></div>
+          </div>
+          <input type="range" min="0" max="100" value="65" step="5" class="progress-input" id="progress-range" oninput="updateProgress(this.value)">
+          <p style="font-size:12px;color:#aaa;margin-top:6px">Перетащите ползунок для обновления прогресса</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <span class="field-label" style="margin-bottom:8px;display:block">Напоминание</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="reminder-tag" id="reminder-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span id="reminder-text">Напомнить 02.06.2026</span>
+              <button onclick="removeReminder()" aria-label="Удалить напоминание">×</button>
+            </span>
+            <button class="btn" onclick="openReminderDialog()" style="font-size:12px;padding:5px 12px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить напоминание
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="action-row">
+          <button class="btn btn-primary" onclick="toast('Статус обновлён')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Передать на проверку
+          </button>
+          <button class="btn btn-amber" onclick="openWaitDialog()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Ожидаю ответа
+          </button>
+          <button class="btn btn-danger">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Закрыть задачу
+          </button>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-history">
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#FCEBEB;color:#A32D2D">ИА</div>
+          <div class="hist-body">
+            <div>Иванов А.С. создал задачу</div>
+            <div class="hist-meta">24.05.2026, 09:14</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#E6F1FB;color:#185FA5">УЕ</div>
+          <div class="hist-body">
+            <div>Урсова Е.А. изменила статус: <span style="color:#aaa">Новая</span> → <span style="color:#27500A;font-weight:500">В работе</span></div>
+            <div class="hist-meta">24.05.2026, 10:32</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#E6F1FB;color:#185FA5">УЕ</div>
+          <div class="hist-body">
+            <div>Урсова Е.А. обновила прогресс: <span style="color:#aaa">0%</span> → <span style="color:#27500A;font-weight:500">65%</span></div>
+            <div class="hist-meta">29.05.2026, 14:55</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#FCEBEB;color:#A32D2D">ИА</div>
+          <div class="hist-body">
+            <div>Иванов А.С. изменил приоритет: <span style="color:#aaa">Средний</span> → <span style="color:#633806;font-weight:500">Высокий</span></div>
+            <div class="hist-meta">29.05.2026, 16:20</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-comments">
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#FCEBEB;color:#A32D2D">ИА</div>
+          <div class="hist-body">
+            <div style="font-weight:500;margin-bottom:3px">Иванов А.С.</div>
+            <div style="font-size:13px;color:#333;background:#fafaf8;padding:10px 12px;border-radius:8px">Коллеги, обновите конфигурацию до конца недели — это блокирует формирование квартального отчёта.</div>
+            <div class="hist-meta">28.05.2026, 11:04</div>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="hist-avatar" style="background:#E6F1FB;color:#185FA5">УЕ</div>
+          <div class="hist-body">
+            <div style="font-weight:500;margin-bottom:3px">Урсова Е.А.</div>
+            <div style="font-size:13px;color:#333;background:#fafaf8;padding:10px 12px;border-radius:8px">Работаю над задачей, 65% готовности. Нужно уточнение по версии конфигурации — отправила запрос в поддержку.</div>
+            <div class="hist-meta">29.05.2026, 15:10</div>
+          </div>
+        </div>
+        <div class="comment-input-wrap">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;color:#0F6E56;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;margin-top:4px">ОП</div>
+          <textarea rows="2" placeholder="Написать комментарий..."></textarea>
+          <button class="btn btn-primary" style="align-self:flex-end" onclick="toast('Комментарий добавлен')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДИАЛОГ ОЖИДАЮ ОТВЕТА -->
+  <div>
+    <div class="section-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Статус «Ожидаю ответа»
+    </div>
+    <div class="card" style="max-width:440px">
+      <div class="card-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="card-header-title">Перевести в статус «Ожидаю ответа»</span>
+      </div>
+      <div style="padding:20px">
+        <p style="font-size:13px;color:#666;margin-bottom:18px">Задача будет ожидать ответа. Система автоматически напомнит вам и заявителю.</p>
+
+        <div class="modal-field">
+          <label>Напомнить через</label>
+          <div class="days-row">
+            <input type="number" id="days-input" value="3" min="1" max="10">
+            <span style="font-size:14px;color:#666">рабочих дней</span>
+          </div>
+          <div class="days-presets">
+            <button class="days-preset sel" onclick="setDays(1,this)">1 день</button>
+            <button class="days-preset sel" onclick="setDays(3,this)">3 дня</button>
+            <button class="days-preset" onclick="setDays(5,this)">5 дней</button>
+            <button class="days-preset" onclick="setDays(7,this)">7 дней</button>
+          </div>
+        </div>
+
+        <div class="modal-field">
+          <label>Комментарий заявителю <span style="color:#bbb;font-weight:400;text-transform:none;letter-spacing:0">(необязательно)</span></label>
+          <textarea class="modal-note" rows="2" placeholder="Например: ожидаю уточнения по версии конфигурации..."></textarea>
+        </div>
+
+        <div style="background:#fffbf0;border:1px solid #f5d9a8;border-radius:9px;padding:10px 14px;font-size:13px;color:#633806;display:flex;gap:8px;align-items:flex-start;margin-bottom:18px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Задача не закроется автоматически. Без вашего действия она останется открытой.
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="confirmWait()">
+            Перевести в статус
+          </button>
+          <button class="btn" style="justify-content:center" onclick="toast('Отменено')">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ОЖИДАЮ ОТВЕТА -->
+<div class="modal-overlay" id="wait-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Ожидаю ответа
+    </div>
+    <div class="modal-sub">Задача перейдёт в ожидание. Система напомнит вам и заявителю.</div>
+    <div class="modal-field">
+      <label>Напомнить через</label>
+      <div class="days-row">
+        <input type="number" id="modal-days" value="3" min="1" max="10">
+        <span style="font-size:14px;color:#666">рабочих дней</span>
+      </div>
+      <div class="days-presets">
+        <button class="days-preset" onclick="setModalDays(1,this)">1 день</button>
+        <button class="days-preset sel" onclick="setModalDays(3,this)">3 дня</button>
+        <button class="days-preset" onclick="setModalDays(5,this)">5 дней</button>
+        <button class="days-preset" onclick="setModalDays(7,this)">7 дней</button>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Комментарий <span style="color:#bbb;font-weight:400;text-transform:none;letter-spacing:0">(необязательно)</span></label>
+      <textarea class="modal-note" rows="2" placeholder="Уточнение для заявителя..."></textarea>
+    </div>
+    <div style="background:#fffbf0;border:1px solid #f5d9a8;border-radius:9px;padding:10px 14px;font-size:13px;color:#633806;display:flex;gap:8px;margin-bottom:4px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Задача не закроется автоматически без вашего действия.
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="confirmWaitModal()">Перевести в статус</button>
+      <button class="btn" onclick="closeModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО НАПОМИНАНИЕ -->
+<div class="modal-overlay" id="reminder-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Напомнить через X дней
+    </div>
+    <div class="modal-sub">Выберите когда напомнить о задаче</div>
+    <div class="modal-field">
+      <label>Количество дней</label>
+      <div class="days-row">
+        <input type="number" id="rem-days" value="2" min="1" max="30">
+        <span style="font-size:14px;color:#666">дней</span>
+      </div>
+      <div class="days-presets">
+        <button class="days-preset" onclick="setRemDays(1,this)">Завтра</button>
+        <button class="days-preset sel" onclick="setRemDays(2,this)">2 дня</button>
+        <button class="days-preset" onclick="setRemDays(3,this)">3 дня</button>
+        <button class="days-preset" onclick="setRemDays(7,this)">Неделя</button>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Заметка <span style="color:#bbb;font-weight:400;text-transform:none;letter-spacing:0">(необязательно)</span></label>
+      <textarea class="modal-note" rows="2" placeholder="О чём напомнить..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveReminder()">Установить напоминание</button>
+      <button class="btn" onclick="closeModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="success-toast" id="toast"></div>
+
+<script>
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+function updateProgress(v) {
+  document.getElementById('progress-fill').style.width = v + '%';
+  document.getElementById('progress-val').textContent = v + '%';
+  const fill = document.getElementById('progress-fill');
+  fill.style.background = v >= 100 ? '#1D9E75' : v >= 70 ? '#639922' : v >= 40 ? '#EF9F27' : '#E24B4A';
+  if (parseInt(v) === 100) toast('Задача выполнена на 100% — перевести на проверку?');
+}
+
+function openWaitDialog() { document.getElementById('wait-modal').classList.add('open'); }
+function openReminderDialog() { document.getElementById('reminder-modal').classList.add('open'); }
+function closeModal() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+function setDays(n, btn) {
+  document.getElementById('days-input').value = n;
+  document.querySelectorAll('#days-input').forEach(() => {});
+  btn.closest('.days-presets').querySelectorAll('.days-preset').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function setModalDays(n, btn) {
+  document.getElementById('modal-days').value = n;
+  btn.closest('.days-presets').querySelectorAll('.days-preset').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function setRemDays(n, btn) {
+  document.getElementById('rem-days').value = n;
+  btn.closest('.days-presets').querySelectorAll('.days-preset').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function confirmWait() {
+  toast('Статус изменён на «Ожидаю ответа»');
+}
+function confirmWaitModal() {
+  const d = document.getElementById('modal-days').value;
+  closeModal();
+  const now = new Date('2026-05-30');
+  now.setDate(now.getDate() + parseInt(d));
+  const dateStr = now.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+  toast('Статус изменён. Напоминание ' + dateStr);
+  document.querySelector('.status-pill').textContent = 'Ожидаю ответа';
+  document.querySelector('.status-pill').className = 'status-pill s-wait';
+}
+
+function saveReminder() {
+  const d = document.getElementById('rem-days').value;
+  closeModal();
+  const now = new Date('2026-05-30');
+  now.setDate(now.getDate() + parseInt(d));
+  const dateStr = now.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+  document.getElementById('reminder-text').textContent = 'Напомнить ' + dateStr;
+  document.getElementById('reminder-tag').style.display = 'inline-flex';
+  toast('Напоминание установлено на ' + dateStr);
+}
+
+function removeReminder() {
+  document.getElementById('reminder-tag').style.display = 'none';
+  toast('Напоминание удалено');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(); });
+});
+</script>
+</body>
+</html>
